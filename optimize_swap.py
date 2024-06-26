@@ -4,13 +4,11 @@ from gekko import GEKKO
 import yfinance as yf
 import tqdm as tqdm
 
-def optimizeSwap(df: pd.DataFrame, MINUTES: int):
-    def omega(MINUTES):
-        df['block_time'] = pd.to_datetime(df['block_time'])
-        last_15_minutes = df[df['block_time'] > df['block_time'].max() - pd.Timedelta(minutes=MINUTES)]
+def optimizeSwap(df: pd.DataFrame):
+    def omega():
         #builds matrices
-        tokens_unique=set(last_15_minutes.token_bought_symbol).union(last_15_minutes.token_sold_symbol)
-        N_swaps=len(last_15_minutes)
+        tokens_unique=set(df.token_bought_symbol).union(df.token_sold_symbol)
+        N_swaps=len(df)
         N_coins=len(tokens_unique)
         tokens={}
         ii=0
@@ -35,7 +33,7 @@ def optimizeSwap(df: pd.DataFrame, MINUTES: int):
 
         # populates matrices
         for n in range(N_swaps):
-            a=last_15_minutes.iloc[n]
+            a=df.iloc[n]
             A=a['token_bought_symbol']
             B=a['token_sold_symbol']
             i=tokens[A]
@@ -151,4 +149,4 @@ def optimizeSwap(df: pd.DataFrame, MINUTES: int):
         sol=pd.DataFrame(solution)
         return sol
 
-    return optimize(*omega(MINUTES))
+    return optimize(*omega())
