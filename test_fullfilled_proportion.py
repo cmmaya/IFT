@@ -16,6 +16,6 @@ sol = optimizeSwap(df_first_50)
 fullfilled_percentage = sol.fulfilled_percentage * 0.01
 fullfilled_proportion = sum(fullfilled_percentage.values * df_first_50['amount_usd'].values) / sum(df_first_50['amount_usd'].values)
 # Get the proportion
-print("IFT fullfilled proportion = ", fullfilled_percentage)
+print("IFT fullfilled percentage = ", fullfilled_percentage)
 print("IFT fullfilled proportion = ", fullfilled_proportion)
 
