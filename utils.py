@@ -1,16 +1,16 @@
 from web3 import Web3
 import json
-import requests
 import os
 import warnings
-import time
+import requests
+
 # Initialize Web3
 web3 = Web3(Web3.HTTPProvider('https://rpc.ankr.com/eth'))
 
 # ABI for the ERC20 token contract to get the symbol
 abi = [
-    {"inputs":[],"name":"name","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},
-    {"inputs":[],"name":"symbol","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"}
+    {"inputs": [], "name": "name", "outputs": [{"internalType": "string", "name": "", "type": "string"}], "stateMutability": "view", "type": "function"},
+    {"inputs": [], "name": "symbol", "outputs": [{"internalType": "string", "name": "", "type": "string"}], "stateMutability": "view", "type": "function"}
 ]
 
 # Function to get token symbol using Web3
@@ -24,47 +24,44 @@ def get_token_symbol(address):
         warnings.warn(f"Warning: Could not retrieve symbol for token {address}. Error: {str(e)}")
         return None
 
-# Function to get token price in USD using Binance API
-def get_token_price_usd(token_hash, retries=1, delay=0):
+# Function to get token price in USD using local JSON file
+def get_token_price_usd_from_file(token_hash, uid, eth_price):
     """
-    Retrieves the current USD price for a given token hash using the CoinGecko API.
+    Retrieves the USD price for a given token hash using a local JSON file.
 
     Parameters:
     token_hash (str): The hash of the token.
-    retries (int): Number of retries for the API request in case of failure.
-    delay (float): Delay in seconds between each retry.
+    uid (str): The unique identifier for the auction.
 
     Returns:
-    float: The current price of the token in USD, or None if retrieval fails.
+    float: The price of the token in USD, or None if not found.
     """
-    url = f"https://api.coingecko.com/api/v3/simple/token_price/ethereum"
+    auction_file = f"auction_{uid}.json"
     
-    params = {
-        "contract_addresses": token_hash,
-        "vs_currencies": "usd"
-    }
-    
-    for attempt in range(retries):
-        try:
-            response = requests.get(url, params=params)
-            data = response.json()
-            
-            if token_hash in data:
-                price_usd = data[token_hash].get("usd")
-                if price_usd is not None:
-                    return price_usd
-                else:
-                    raise ValueError(f"Error: USD price not found for token {token_hash}")
-            else:
-                raise ValueError(f"Error retrieving price for token {token_hash}: {data.get('error', 'Unknown error')}")
-        except Exception as e:
-            print(f"Attempt {attempt + 1} failed for token price {token_hash}: {e}")
-            time.sleep(delay)  # Delay before retrying
-    
-    print(f"Failed to retrieve token price for {token_hash} after {retries} attempts")
-    return None
+    if not os.path.exists(auction_file):
+        warnings.warn(f"Warning: Auction file {auction_file} not found.")
+        return None
 
-# Local cache
+    try:
+        with open(auction_file, 'r') as file:
+            data = json.load(file)
+            prices = data.get("auction", {}).get("prices", {})
+
+            if token_hash in prices:
+                # if get_token_symbol(token_hash) in ['USDC', 'USDT']:
+                #     token_sold_amount *= 1e-6
+                # else:
+                #     token_sold_amount *= 1e-18               
+                usd_price = int(prices[token_hash]) * eth_price
+                return usd_price
+            else:
+                warnings.warn(f"Warning: Token price for {token_hash} not found in auction file.")
+                return None
+    except Exception as e:
+        warnings.warn(f"Warning: Error reading auction file {auction_file}. Error: {str(e)}")
+        return None
+
+# Local cache for symbols only
 cache_file = 'token_cache.json'
 if os.path.exists(cache_file):
     with open(cache_file, 'r') as f:
@@ -76,29 +73,19 @@ def save_cache():
     with open(cache_file, 'w') as f:
         json.dump(token_cache, f)
 
-def get_token_info(address):
-    # Check cache first
+def get_token_info(address, uid, eth_price):
+    # Fetch symbol using Web3 and check cache first
     if address in token_cache:
-        if token_cache[address]['price_usd'] is None:
-            token_cache[address]['price_usd'] = get_token_price_usd(address)
-    
-        if token_cache[address]['symbol'] is None:
-            token_cache[address]['symbol'] = get_token_symbol(address)
-
+        token_symbol = token_cache[address]['symbol']
+    else:
+        token_symbol = get_token_symbol(address)
+        token_cache[address] = {'symbol': token_symbol}
         save_cache()
-        return token_cache[address]
 
-    # Fetch symbol using Web3
-    token_symbol = get_token_symbol(address)
+    # Fetch price using local JSON file
+    token_price = get_token_price_usd_from_file(address, uid, eth_price)
 
-    # Fetch price using Binance API
-    token_price = get_token_price_usd(address)
-
-    # Cache the result
-    token_cache[address] = {'symbol': token_symbol, 'price_usd': token_price}
-    save_cache()
-
-    return token_cache[address]
+    return {'symbol': token_symbol, 'price_usd': token_price}
 
 def get_eth_price_usd():
     url = "https://api.coingecko.com/api/v3/simple/price"
@@ -120,6 +107,8 @@ def get_eth_price_usd():
         print(f"Error fetching Ethereum price: {e}")
         return None
 
-token_info = get_token_info("0xae7ab96520de3a18e5e111b5eaab095312d7fe84")
-print(token_info['symbol'])
-print(token_info['price_usd'])
+# Example usage
+# uid = "9051834"
+# token_info = get_token_info("0xae7ab96520de3a18e5e111b5eaab095312d7fe84", uid)
+# print(token_info['symbol'])
+# print(token_info['price_usd'])
