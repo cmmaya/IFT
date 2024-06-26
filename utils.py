@@ -36,7 +36,7 @@ def get_token_price_usd_from_file(token_hash, uid, eth_price):
     Returns:
     float: The price of the token in USD, or None if not found.
     """
-    auction_file = f"auction_{uid}.json"
+    auction_file = os.path.join("auction_data", f"auction_{uid}.json")
     
     if not os.path.exists(auction_file):
         warnings.warn(f"Warning: Auction file {auction_file} not found.")
@@ -62,7 +62,7 @@ def get_token_price_usd_from_file(token_hash, uid, eth_price):
         return None
 
 # Local cache for symbols only
-cache_file = 'token_cache.json'
+cache_file = 'cache/token_cache.json'
 if os.path.exists(cache_file):
     with open(cache_file, 'r') as f:
         token_cache = json.load(f)

@@ -1,8 +1,10 @@
 from optimize_swap import optimizeSwap
 import pandas as pd
+import os
 
 # Import the dataframe
-df = pd.read_csv('dataframe_9051834.csv')
+csv_filename = os.path.join("dataframes",'dataframe_9051834.csv')
+df = pd.read_csv(csv_filename)
 df = df[df['amount_usd'] != 0] # Drop columns with no price data
 df_first_50 = df.head(50) # First 50 rows
 
