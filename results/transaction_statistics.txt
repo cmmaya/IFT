@@ -1,0 +1,74 @@
+**CoW protocol metrics**:
+
+Count of transactions: 109191
+Count of unique transactions: 85114
+
+
+TOKEN METRICS:
+
+Top 10 most used buy_token:
+buy_token
+ETH      26498
+USDC     16388
+USDT      7739
+WETH      5766
+DAI       2371
+WBTC      1424
+COW       1341
+HEX       1338
+stETH     1054
+RSTK       822
+
+Top 10 most used sell_token:
+sell_token
+ETH      17816
+USDC     16184
+USDT      9348
+WETH      7145
+DAI       3118
+WBTC      1380
+OLAS      1201
+COW       1152
+stETH     1149
+PRIME     1098
+
+FEES METRICS:
+
+Mean percentage of fees:
+2.32%
+
+Top 10 sell_tokens with highest percentage fees:
+sell_token
+BLAST        2458.453797
+HUSBANT       845.052017
+MEO           820.135384
+MONERO        307.640268
+DEFI+S        273.750861
+LADYS         249.757395
+Pixelcoin     240.556697
+BAX           210.133240
+SHX           204.327365
+FTX2.0        172.302467
+
+VOLUME METRICS:
+
+Top 10 most volume transactions sell - > buy:
+ETH -> stETH: 11038754.45
+USDC -> ETH: 10013674.910894226
+USDC -> USDT: 10006040.0
+USDT -> USDC: 8329815.463689218
+DAI -> ETH: 8095220.619688737
+USDT -> ETH: 8072405.872305709
+USDT -> ETH: 8015610.5590151185
+USDT -> ETH: 8002681.66499489
+wstETH -> ETH: 7585921.234261844
+rETH -> wstETH: 7569297.275351324
+
+
+Median volume USD per transaction:
+buy_value_usd     5200.914800
+sell_value_usd    5113.334662
+
+Standard deviation of volume USD per transaction:
+buy_value_usd     202650.636440
+sell_value_usd    198399.565862

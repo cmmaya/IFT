@@ -1,8 +1,9 @@
 import pandas as pd
 from dune_client.client import DuneClient
+import os
 
 # Initialize the DuneClient with your API key
-dune = DuneClient("UbiIvkzQZlVWnKnl0RyGbBiv7nKFnPSK")
+dune = DuneClient("v4M3L7VhmXARx8bWf238yHw64qw1kV2C")
 
 # Get the latest result of the specified query
 query_result = dune.get_latest_result(3849243)
@@ -23,6 +24,8 @@ columns = [
 df = pd.DataFrame(rows, columns=columns)
 
 # Save the DataFrame to a CSV file
-df.to_csv('query_result.csv', index=False)
+
+csv_filename = os.path.join("dataframes", "query_result.csv")
+df.to_csv(csv_filename, index=False)
 
 print("Query result saved to query_result.csv")

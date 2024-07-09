@@ -6,7 +6,7 @@ import os
 def getOrderBookData(block_id):
 
     # Read JSON data from a text file
-    file_path = os.path.join("auction_data", f"data_id_{block_id}.txt")
+    file_path = os.path.join("auction_data", f"data_id_{block_id}.json")
 
     with open(file_path, "r") as file:
         data = json.load(file)
