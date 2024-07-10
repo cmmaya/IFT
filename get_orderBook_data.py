@@ -31,6 +31,9 @@ def getOrderBookData(block_id):
     # Loop through each order and extract the required fields
     for order in orders:
         uid = order.get("uid")
+        kind = order.get("kind")
+        trx_class = order.get("class")
+        
         token_bought = order.get("buyToken")
         token_sold = order.get("sellToken")
 
@@ -75,6 +78,8 @@ def getOrderBookData(block_id):
         data_list.append({
             "uid": uid,
             "amount_usd": amount_usd,
+            "kind": kind,
+            "class": trx_class,
             "token_bought_symbol": token_bought_symbol,
             "token_sold_symbol": token_sold_symbol,
             "token_bought_amount": token_bought_amount,

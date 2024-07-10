@@ -4,7 +4,7 @@ from gekko import GEKKO
 import yfinance as yf
 import tqdm as tqdm
 
-def optimizeSwap(df: pd.DataFrame, order_kind: str):
+def optimizeSwap(df: pd.DataFrame):
     def omega():
         #builds matrices
         tokens_unique=set(df.token_bought_symbol).union(df.token_sold_symbol)
@@ -43,6 +43,8 @@ def optimizeSwap(df: pd.DataFrame, order_kind: str):
             T_sell[n,j]=1
             pi=(0.98 + 0.04*np.random.random())*a['price_token_bought']/a['price_token_sold']
             
+            order_kind = f"{a['class']}_{a['kind']}"
+
             # Handle order types
             if (order_kind == "limit_sell"):
                 max_amount_buy = x_bar
