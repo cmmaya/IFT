@@ -16,9 +16,8 @@ def obtain_data(list_of_auctions):
 for auction_id in list_of_auctions:
     csv_filename = os.path.join("dataframes",f"dataframe_{auction_id}.csv")
     df = pd.read_csv(csv_filename)
-    num_of_trx_filled = sum(df['fulfill'])
-    num_of_trx = len(df)
-    print("id", auction_id, "  ","num_of_trx = ", num_of_trx, "  ", "num_of_trx_filled=", num_of_trx_filled)
+    avg_volume = sum(df['fulfill'] * df['amount_usd']) / sum(df['amount_usd'])
+    print("id", auction_id, "  ","avg_volume = ", avg_volume)
 
 
 
