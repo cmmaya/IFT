@@ -2,6 +2,9 @@ import pandas as pd
 from utils import get_token_info, get_eth_price_usd
 import json
 import os
+import re
+import pickle
+import warnings
 
 def getOrderBookData(block_id):
 
@@ -17,6 +20,11 @@ def getOrderBookData(block_id):
     with open(auction_file_path, "r") as auction_file:
         auction_data = json.load(auction_file)
 
+    #Extract decimals from pkl file
+    pickle_file = os.path.join("cache", "symbols_and_decimals.pkl")
+    with open(pickle_file, 'rb') as file:
+        symbols_and_decimals = pickle.load(file)
+    
     # Extract the orders and the fulfilled order ids
     orders = data.get("orders", [])
 
@@ -51,19 +59,18 @@ def getOrderBookData(block_id):
         token_sold_amount = int(order.get("sellAmount"))
 
         # Adjust token amounts based on the token symbol
-        if token_bought_symbol and any(substring in token_bought_symbol for substring in ['USDC', 'USDT']):
-            token_bought_amount *= 1e-6
-            token_bought_price_usd = token_bought_price_usd * 1e-30 if token_bought_price_usd is not None else None
-        else:
-            token_bought_amount *= 1e-18
-            token_bought_price_usd = token_bought_price_usd * 1e-18 if token_bought_price_usd is not None else None
 
-        if token_sold_symbol and any(substring in token_sold_symbol for substring in ['USDC', 'USDT']):
-            token_sold_amount *= 1e-6
-            token_sold_price_usd = token_sold_price_usd * 1e-30 if token_sold_price_usd is not None else None
+        token_bought_info = symbols_and_decimals.get(token_bought)
+        if token_bought_info:
+                token_bought_amount *= 10**(-token_bought_info['decimals'])
         else:
-            token_sold_amount *= 1e-18
-            token_sold_price_usd = token_sold_price_usd * 1e-18 if token_sold_price_usd is not None else None
+            token_bought_amount = None
+
+        token_sold_info = symbols_and_decimals.get(token_sold)
+        if token_sold_info:
+                token_sold_amount *= 10**(-token_sold_info['decimals'])
+        else:
+            token_sold_amount = None
 
 
         # Calculate amount_usd
@@ -73,8 +80,16 @@ def getOrderBookData(block_id):
             amount_usd = None
 
         # Determine if the order is fulfilled
+
         fulfill = 1 if uid in fulfilled_order_ids else 0
 
+        fee = 0 
+        try:
+            if fulfill == 1:
+                fee = int(order.get('protocolFees')[0]["priceImprovement"]["quote"]["fee"]) * token_sold_price_usd * 10**(-token_sold_info['decimals'])
+        except Exception as e:
+            warnings.warn("fee not found in file")
+        
         data_list.append({
             "uid": uid,
             "amount_usd": amount_usd,
@@ -86,7 +101,8 @@ def getOrderBookData(block_id):
             "token_sold_amount": token_sold_amount,
             "token_bought_price_usd": token_bought_price_usd,
             "token_sold_price_usd": token_sold_price_usd,
-            "fulfill": fulfill
+            "fulfill": fulfill,
+            "fee": fee
         })
 
     # Convert the list of dictionaries to a pandas DataFrame
@@ -98,5 +114,10 @@ def getOrderBookData(block_id):
 
     print(f"Data successfully saved to {csv_filename}")
 
-block_id = "9051834"
-getOrderBookData(block_id)
+dataframes_folder = "auction_data"
+list_of_datasets = [int(re.search(r"data_id_(\d+)\.json", f).group(1)) for f in os.listdir(dataframes_folder) if re.search(r"data_id_(\d+)\.json", f)]
+
+for dataset in list_of_datasets:
+    getOrderBookData(dataset)
+
+# getOrderBookData('9142110')

@@ -3,6 +3,7 @@ import json
 import os
 import warnings
 import requests
+import pickle
 
 # Initialize Web3
 web3 = Web3(Web3.HTTPProvider('https://rpc.ankr.com/eth'))
@@ -36,30 +37,39 @@ def get_token_price_usd_from_file(token_hash, uid, eth_price):
     Returns:
     float: The price of the token in USD, or None if not found.
     """
+    cache_file =  os.path.join("cache", "token_cache.json")
+    pickle_file = os.path.join("cache", "symbols_and_decimals.pkl")
     auction_file = os.path.join("auction_data", f"auction_{uid}.json")
-    
-    if not os.path.exists(auction_file):
-        warnings.warn(f"Warning: Auction file {auction_file} not found.")
-        return None
 
     try:
+        with open(pickle_file, 'rb') as file:
+            symbols_and_decimals = pickle.load(file)
         with open(auction_file, 'r') as file:
             data = json.load(file)
             prices = data.get("auction", {}).get("prices", {})
-
+            
             if token_hash in prices:
-                # if get_token_symbol(token_hash) in ['USDC', 'USDT']:
-                #     token_sold_amount *= 1e-6
-                # else:
-                #     token_sold_amount *= 1e-18               
-                usd_price = int(prices[token_hash]) * eth_price
-                return usd_price
-            else:
-                warnings.warn(f"Warning: Token price for {token_hash} not found in auction file.")
-                return None
+                if token_hash in symbols_and_decimals:
+                    decimals = symbols_and_decimals[token_hash]['decimals']
+                    price = prices[token_hash]
+                    price_usd = int(price) * eth_price * 1e-18 / 10**(18 - decimals)
+                    return price_usd
     except Exception as e:
-        warnings.warn(f"Warning: Error reading auction file {auction_file}. Error: {str(e)}")
-        return None
+        warnings.warn(f"Warning: Error reading auction file. Error: {str(e)}")
+
+    # Try to get the price from the current JSON file
+    try:
+        with open(cache_file, 'r') as file:
+            data = json.load(file)
+            hash_price_pairs = {k: v['price_usd'] for k, v in data.items() if 'price_usd' in v}
+            
+            if token_hash in hash_price_pairs:
+                return hash_price_pairs[token_hash]
+
+    except Exception as e:
+        warnings.warn(f"Warning: Error reading cahe file. Error: {str(e)}")
+    # If price not found in either, return None
+    return None
 
 # Local cache for symbols only
 cache_file = 'cache/token_cache.json'
@@ -108,7 +118,8 @@ def get_eth_price_usd():
         return None
 
 # Example usage
-# uid = "9051834"
-# token_info = get_token_info("0xae7ab96520de3a18e5e111b5eaab095312d7fe84", uid)
+# uid = "9142103"
+# eth_price = 3462
+# token_info = get_token_info("0x2260fac5e5542a773aa44fbcfedf7c193bc2c599", uid, eth_price)
 # print(token_info['symbol'])
 # print(token_info['price_usd'])

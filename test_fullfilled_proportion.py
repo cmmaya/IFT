@@ -2,10 +2,12 @@ from optimize_swap import optimizeSwap
 import pandas as pd
 import os
 import time
+import re
 
 # Function to process chunks and collect results
-def process_chunk(chunk_num, df_chunk):
+def process_chunk(chunk_num, df):
     start_time_chunk = time.time()  # Start time for the chunk processing
+    df_chunk = df.iloc[0:50].copy()
     
     try:
         # Calculate prices
@@ -15,13 +17,23 @@ def process_chunk(chunk_num, df_chunk):
         # Optimize and calculate fullfilled proportion
         sol = optimizeSwap(df_chunk)
         fullfilled_percentage = sol.fulfilled_percentage * 0.01
-        fullfilled_proportion = sum(fullfilled_percentage.values * df_chunk['amount_usd'].values) / sum(df_chunk['amount_usd'].values)
-
+        fullfilled_proportion = sum(fullfilled_percentage.values * df_chunk['amount_usd'].values) / sum(df['amount_usd'].values)
+        total_volume = sum(df['amount_usd'].values)
+        volume_paired = sum(fullfilled_percentage.values * df_chunk['amount_usd'].values)
+        CoW_transaction_paired = sum(df['fulfill'])
+        CoW_fee_estimate =  sum(df['fee'])
+        Volume_fee_estimate = volume_paired * 0.01
         # Return chunk results
         return {
             'chunk': chunk_num,
+            'deals_paired': sum(sol.fulfilled_percentage.values) / 100,
             'fullfilled_proportion': fullfilled_proportion,
-            'execution_time_seconds': time.time() - start_time_chunk
+            'total_volume': total_volume,
+            'volume_paired': volume_paired,
+            'execution_time_seconds': time.time() - start_time_chunk,
+            'CoW transaction paired': CoW_transaction_paired,
+            'CoW_fee_estimate': CoW_fee_estimate,
+            'Volume fee estimate': Volume_fee_estimate
         }
     except Exception as e:
         print(f"Error occurred in chunk {chunk_num}: {str(e)}")
@@ -30,42 +42,71 @@ def process_chunk(chunk_num, df_chunk):
 # Start time for the entire script
 start_time_script = time.time()
 
+
+
+def Iterate_over_chunks(df, chunk_size):
+    results = []
+    # Iterate over chunks
+    num_chunks = len(df) // chunk_size
+    for chunk_num in range(num_chunks):
+        start_idx = chunk_num * chunk_size
+        end_idx = (chunk_num + 1) * chunk_size
+        df_chunk = df.iloc[start_idx:end_idx].copy()
+        
+        # Process chunk and handle errors
+        chunk_result = process_chunk(chunk_num + 1, df_chunk)
+        if chunk_result is not None:
+            results.append(chunk_result)
+        else:
+            print(f"Skipping chunk {chunk_num + 1} due to error.")
+        print(f"executed chunk, operation time: {time.time() - start_time_script}")
+    return results
+
+def iterate_over_datasets(list_of_datasets):
+    results = []
+    i = 1
+
+    # Iterate over dataSets
+    for dataset in list_of_datasets:
+        i += 1
+        csv_filename = os.path.join("dataframes", f"dataframe_{dataset}.csv")
+        df = pd.read_csv(csv_filename)
+        df = df[df['amount_usd'] != 0]  # Drop rows with no price data
+        df = df[df['amount_usd'] <= 1e6]  # Drop rows with dubious data
+        df = df[(df['token_sold_amount'] <= 1e6) | (df['token_sold_amount'] >= 1e-3) ]  # Drop rows with dubious data
+        df = df[(df['token_bought_amount'] <= 1e6) |( df['token_bought_amount'] >= 1e-3) ]  # Drop rows with dubious data
+        # Process chunk and handle errors
+        chunk_result = process_chunk(1, df)
+        if chunk_result is not None:
+            results.append(chunk_result)
+        else:
+            print(f"Skipping dataSet {i} due to error.")
+        print(f"executed dataSet, operation time: {time.time() - start_time_script}")
+    return results
+
+## ---------------------------------
 # Import the dataframe
-csv_filename = os.path.join("dataframes", 'dataframe_9051834.csv')
-df = pd.read_csv(csv_filename)
-df = df[df['amount_usd'] != 0]  # Drop rows with no price data
+# csv_filename = os.path.join("dataframes", 'dataframe_9051834.csv')
+# df = pd.read_csv(csv_filename)
+# df = df[df['amount_usd'] != 0]  # Drop rows with no price data
+# df = df[df['amount_usd'] <= 10e6]  # Drop rows with dubious data
 
-# Define chunk size
-chunk_size = 50
+# # Define chunk size
+# chunk_size = 50
 
-# Initialize empty list to collect results
-results = []
+# # Convert results list to DataFrame
+# results_chunk_iteration = pd.DataFrame(Iterate_over_chunks(df, chunk_size))
 
-# Iterate over chunks
-num_chunks = len(df) // chunk_size
-for chunk_num in range(5):
-    start_idx = chunk_num * chunk_size
-    end_idx = (chunk_num + 1) * chunk_size
-    df_chunk = df.iloc[start_idx:end_idx].copy()
-    
-    # Process chunk and handle errors
-    chunk_result = process_chunk(chunk_num + 1, df_chunk)
-    if chunk_result is not None:
-        results.append(chunk_result)
-    else:
-        print(f"Skipping chunk {chunk_num + 1} due to error.")
-    print(f"executed chunk, operation time: {time.time() - start_time_script}")
+# results_filename = os.path.join("results", "chunk_iteration_results.csv")
+# results_chunk_iteration.to_csv(results_filename, index=False)
 
-# Convert results list to DataFrame
-results_df = pd.DataFrame(results)
+##--------------------------------
+dataframes_folder = "dataframes"
+list_of_datasets = [int(re.search(r"dataframe_(\d+)\.csv", f).group(1)) for f in os.listdir(dataframes_folder) if re.search(r"dataframe_(\d+)\.csv", f)]
+results_dataset_iteration = pd.DataFrame(iterate_over_datasets(list_of_datasets))
+results_filename = os.path.join("results", "datasets_iteration_results.csv")
+results_dataset_iteration.to_csv(results_filename, index=False)
 
-# Save results to CSV
-results_folder = "results"
-if not os.path.exists(results_folder):
-    os.makedirs(results_folder)
-
-results_filename = os.path.join(results_folder, "optimization_results.csv")
-results_df.to_csv(results_filename, index=False)
 
 # End time for the entire script
 end_time_script = time.time()
