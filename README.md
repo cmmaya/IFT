@@ -93,9 +93,31 @@ Reconstructing the JSON files as tables shows the input information for the algo
 | 0x3230f5... | 144.73     | sell | limit | WETH                | FET               | 0.04                | 104.01            | 3437.00                | 1.39                 | 0       | 0   |
 
 
-## Files description
-* **dataframes** folder contains csv files with auction information downloaded with download_multiple_auctions.py file and organized with get_orderBook_data.py
-* **optimize_swap.py** holds the optimizing algorithm
-* **get_DUNE_data.py** request info from DUNE API and **dune_metrics.py** creates a report based on the metrics.
-* **test_fulfilled_proportion** runs the algorith for multiple auctions and outputs different metrics to compare both algorithms
-* **metrics_report** folder contains code related to graphs and data useful for the final report.
+
+
+## Results Obtained
+
+Using information from 72 auction batches obtained from the [CoW protocol's Order Book API](https://docs.cow.fi/cow-protocol/reference/apis/orderbook). We used our [**optimization algorithm**](https://hackmd.io/@pkzpf-CcSQCT_9b6FGtTPg/r1FU_HhD0) obtaining the following results:
+
+| Metric                                   | Mean      | SD        |
+|------------------------------------------|-----------|-----------|
+| Transactions paired                      | 7.81      | 3.85      |
+| Matched volume                           | 135801.54 | 68595.96  |
+| Matched volume percentage                | 0.0046      | 0.0024      |
+| Fees collected (assuming 0.01% of volume)| 13.58     | 6.86      |
+
+For the same 72 auction batches, **CoW protocol** obtained the following results:
+| Metric                        | Mean     | SD         |
+|-------------------------------|----------|------------|
+| Transactions paired           | 1.24     | 1.00       |
+| Matched volume                | 43756.82 | 132392.69  |
+| Matched volume percentage     | 0.0014     | 0.0042       |
+| Fees collected                | 14.45    | 15.46      |
+
+
+Historical data reveals that CoW protocol has a mean volume per transaction of 35935.32 USD. 
+![image](https://hackmd.io/_uploads/rksWbA6wA.png)
+*Mean volume per transaction Quarterly ([CoW Swap](https://dune.com/cowprotocol/cowswap-trades))*
+
+According to data retrieved from [Dune](https://dune.com/cowprotocol/batch-history), on average, each batch resolves 1.08 trades from approximately 2112 intents posted per block.
+
